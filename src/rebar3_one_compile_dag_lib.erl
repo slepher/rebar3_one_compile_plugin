@@ -1,4 +1,5 @@
 -module(rebar3_one_compile_dag_lib).
+%% codes from rebar3/src/rebar3_compiler.erl with find_source_files/4, init_dag/7 exported:
 
 -export([find_source_files/4]).
 -export([init_dag/7]).
