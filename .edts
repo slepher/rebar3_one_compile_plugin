@@ -1,0 +1,3 @@
+:name "rebar3_one_compile"
+:lib-dirs '("_build/default/lib" "_checkouts")
+:app-include-dirs '("include")
