@@ -1,6 +1,6 @@
 {application, rebar3_one_compile_plugin,
  [{description, "Compile one module in project."},
-  {vsn, "0.0.3"},
+  {vsn, "0.0.4"},
   {registered, []},
   {applications,
    [kernel,

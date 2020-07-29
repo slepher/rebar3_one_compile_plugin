@@ -132,11 +132,18 @@ run(CompilerMod, AppInfo, Module, Label) ->
                   Extname = filename:extension(Basename),
                   lists:member(Rootname, Modules) and (Extname == SrcExt) 
           end, FoundFiles),
-    G = rebar3_one_compile_dag_lib:init_dag(CompilerMod, AbsInclDirs, AbsSrcDirs, ModuleReleatedFiles, OutDir, EbinDir, Label),
-    {{_FirstFiles, _FirstFileOpts}, {_RestFiles, Opts}} = CompilerMod:needed_files(G, ModuleReleatedFiles, Mappings, AppInfo),
-    true = digraph:delete(G),
-
-    compile_each(ModuleReleatedFiles, Opts, BaseOpts, Mappings, CompilerMod).
+    case ModuleReleatedFiles of
+        [] ->
+            ok;
+        _ ->
+            G = rebar3_one_compile_dag_lib:init_dag(
+                  CompilerMod, AbsInclDirs, AbsSrcDirs, ModuleReleatedFiles, OutDir, EbinDir, Label),
+            {{_FirstFiles, _FirstFileOpts}, {_RestFiles, Opts}} =
+                CompilerMod:needed_files(G, ModuleReleatedFiles, Mappings, AppInfo),
+            io:format("compiler module is ~p~n", [CompilerMod]),
+            true = digraph:delete(G),
+            compile_each(ModuleReleatedFiles, Opts, BaseOpts, Mappings, CompilerMod)
+    end.
 
 compile_each([], _Opts, _Config, _Outs, _CompilerMod) ->
     ok;
