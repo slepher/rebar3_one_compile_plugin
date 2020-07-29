@@ -41,27 +41,35 @@ do(State) ->
     {Opts, _} = rebar_state:command_parsed_args(State),
     Application = proplists:get_value(application, Opts, undefined),
     Module = proplists:get_value(module, Opts, undefined),
-    rebar_paths:set_paths([deps], State),
-
-    Providers = rebar_state:providers(State),
-    Deps = rebar_state:deps_to_build(State),
-
-    ProjectApps = rebar_state:project_apps(State),
-    
-    %% add project apps to paths
-    {ok, ProjectApps1} = rebar_digraph:compile_order(ProjectApps),
-    code:add_pathsa([rebar_app_info:ebin_dir(AppInfo) || AppInfo <- ProjectApps1]),
-
-    CompileApp = compiled_app(Application, Deps, ProjectApps),
-    case Module of
-        undefined ->
-            rebar_prv_compile:compile(State, Providers, CompileApp);
+    case {Application, Module} of
+        {undefined, undefined} ->
+            rebar_api:abort("at least one of -a $APP or -m $MODULE should provided", []);
         _ ->
-            Compilers = rebar_state:compilers(State),
             rebar_paths:set_paths([deps], State),
-            run_compilers(Compilers, CompileApp, Module)
-    end,
-    {ok, State}.
+
+            Providers = rebar_state:providers(State),
+            Deps = rebar_state:deps_to_build(State),
+
+            ProjectApps = rebar_state:project_apps(State),
+
+            %% add project apps to paths
+            {ok, ProjectApps1} = rebar_digraph:compile_order(ProjectApps),
+            code:add_pathsa([rebar_app_info:ebin_dir(AppInfo) || AppInfo <- ProjectApps1]),
+
+            CompileApps = compile_apps(Application, Deps ++ ProjectApps1),
+            lists:foreach(
+              fun(CompileApp) ->
+                      case Module of
+                          undefined ->
+                              rebar_prv_compile:compile(State, Providers, CompileApp);
+                          _ ->
+                              Compilers = rebar_state:compilers(State),
+                              rebar_paths:set_paths([deps], State),
+                              run_compilers(Compilers, CompileApp, Module)
+                      end
+              end, CompileApps),
+            {ok, State}
+    end.
 
 -spec format_error(any()) -> iolist().
 format_error({missing_artifact, File}) ->
@@ -85,20 +93,18 @@ run_compilers(Compilers, AppInfo, Module) ->
                             end, AppInfoExts)
                   end, Compilers).
 
-compiled_app(undefined, _Deps, [App]) ->
-    App;
-compiled_app(undefined, _Deps, _Apps) ->
-    rebar_api:abort("multi apps in project", []);
-compiled_app(Appname, Deps, Apps) ->
+compile_apps(undefined, Apps) ->
+    Apps;
+compile_apps(Appname, Apps) ->
     case lists:filter(
            fun(AppInfo) ->
               Name = rebar_app_info:name(AppInfo),
                    Name == list_to_binary(Appname)
-           end, Apps ++ Deps) of
+           end, Apps) of
         [] ->
             rebar_api:abort("no app named ~s", [Appname]);
-        [App] ->
-            App
+        Apps1 ->
+            Apps1
     end.
 
 run(CompilerMod, AppInfo, Module, Label) ->
