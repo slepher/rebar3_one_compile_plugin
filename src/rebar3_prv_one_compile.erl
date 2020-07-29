@@ -95,14 +95,15 @@ run_compilers(Compilers, AppInfo, Module) ->
 
 compile_apps(undefined, Apps) ->
     Apps;
-compile_apps(Appname, Apps) ->
+compile_apps(AppName, Apps) ->
+    AppNames = string:split(AppName, ","),
     case lists:filter(
            fun(AppInfo) ->
               Name = rebar_app_info:name(AppInfo),
-                   Name == list_to_binary(Appname)
+                   lists:member(binary_to_list(Name), AppNames)
            end, Apps) of
         [] ->
-            rebar_api:abort("no app named ~s", [Appname]);
+            rebar_api:abort("no app named ~s", [AppName]);
         Apps1 ->
             Apps1
     end.
