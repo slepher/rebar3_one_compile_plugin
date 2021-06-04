@@ -96,7 +96,7 @@ run_compilers(Compilers, AppInfo, Module) ->
 compile_apps(undefined, Apps) ->
     Apps;
 compile_apps(AppName, Apps) ->
-    AppNames = string:split(AppName, ",", all),
+    AppNames = string:split(AppName, "+", all),
     case lists:filter(
            fun(AppInfo) ->
               Name = rebar_app_info:name(AppInfo),
@@ -113,7 +113,7 @@ run(CompilerMod, AppInfo, Module, Label) ->
       include_dirs := InclDirs,
       src_ext := SrcExt,
       out_mappings := Mappings} = CompilerMod:context(AppInfo),
-    Modules = string:split(Module, ","),
+    Modules = string:split(Module, "+", all),
     BaseDir = rebar_utils:to_list(rebar_app_info:dir(AppInfo)),
     EbinDir = rebar_utils:to_list(rebar_app_info:ebin_dir(AppInfo)),
 
