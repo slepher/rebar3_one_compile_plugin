@@ -57,17 +57,17 @@ do(State) ->
             code:add_pathsa([rebar_app_info:ebin_dir(AppInfo) || AppInfo <- ProjectApps1]),
 
             CompileApps = compile_apps(Application, Deps ++ ProjectApps1),
-            lists:foreach(
-              fun(CompileApp) ->
-                      case Module of
-                          undefined ->
-                              rebar_prv_compile:compile(State, Providers, CompileApp);
-                          _ ->
+            case Module of
+                undefined ->
+                    rebar_prv_compile:compile(State, Providers, CompileApps);
+                _ ->
+                    lists:foreach(
+                      fun(CompileApp) ->
                               Compilers = rebar_state:compilers(State),
                               rebar_paths:set_paths([deps], State),
                               run_compilers(Compilers, CompileApp, Module)
-                      end
-              end, CompileApps),
+                      end, CompileApps)
+            end,
             {ok, State}
     end.
 
@@ -97,16 +97,21 @@ compile_apps(undefined, Apps) ->
     Apps;
 compile_apps(AppName, Apps) ->
     AppNames = string:split(AppName, "+", all),
-    case lists:filter(
-           fun(AppInfo) ->
-              Name = rebar_app_info:name(AppInfo),
-                   lists:member(binary_to_list(Name), AppNames)
-           end, Apps) of
-        [] ->
-            rebar_api:abort("no app named ~s", [AppName]);
-        Apps1 ->
-            Apps1
-    end.
+    AppMap = 
+        lists:foldl(
+          fun(AppInfo, Acc) ->
+                  Name = binary_to_list(rebar_app_info:name(AppInfo)),
+                  maps:put(Name, AppInfo, Acc)
+          end, #{}, Apps),
+    lists:foldr(
+      fun(App, Acc) ->
+              case maps:find(App, AppMap) of
+                  {ok, AppInfo} ->
+                      [AppInfo|Acc];
+                  error ->
+                      rebar_api:abort("no app named ~s", [AppName])
+              end
+      end, [], AppNames).
 
 run(CompilerMod, AppInfo, Module, Label) ->
     #{src_dirs := SrcDirs,
