@@ -48,7 +48,7 @@ do(State) ->
             rebar_paths:set_paths([deps], State),
 
             Providers = rebar_state:providers(State),
-            Deps = rebar_state:deps_to_build(State),
+            Deps = rebar_state:all_deps(State),
 
             ProjectApps = rebar_state:project_apps(State),
 
