@@ -96,7 +96,7 @@ run_compilers(Compilers, AppInfo, Module) ->
 compile_apps(undefined, Apps) ->
     Apps;
 compile_apps(AppName, Apps) ->
-    AppNames = string:split(AppName, ","),
+    AppNames = string:split(AppName, ",", all),
     case lists:filter(
            fun(AppInfo) ->
               Name = rebar_app_info:name(AppInfo),
